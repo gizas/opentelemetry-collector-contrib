@@ -32,12 +32,12 @@ type elasticsearchTracesExporter struct {
 	model       mappingModel
 }
 
-func newTracesExporter(logger *zap.Logger, cfg *Config) (*elasticsearchTracesExporter, error) {
+func newTracesExporter(logger *zap.Logger, cfg *Config, ctx context.Context) (*elasticsearchTracesExporter, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
 
-	client, err := newElasticsearchClient(logger, cfg)
+	client, err := newElasticsearchClient(logger, cfg, ctx)
 	if err != nil {
 		return nil, err
 	}

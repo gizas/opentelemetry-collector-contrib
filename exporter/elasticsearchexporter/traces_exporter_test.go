@@ -125,7 +125,7 @@ func TestTracesExporter_New(t *testing.T) {
 				os.Setenv(k, v)
 			}
 
-			exporter, err := newTracesExporter(zap.NewNop(), test.config)
+			exporter, err := newTracesExporter(zap.NewNop(), test.config, context.TODO())
 			if exporter != nil {
 				defer func() {
 					require.NoError(t, exporter.Shutdown(context.TODO()))
@@ -439,7 +439,7 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 	})
 }
 func newTestLogsExporter(t *testing.T, url string, fns ...func(*Config)) *elasticsearchLogsExporter {
-	exporter, err := newLogsExporter(zaptest.NewLogger(t), withTestTracesExporterConfig(fns...)(url))
+	exporter, err := newLogsExporter(zaptest.NewLogger(t), withTestTracesExporterConfig(fns...)(url), context.TODO())
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -449,7 +449,7 @@ func newTestLogsExporter(t *testing.T, url string, fns ...func(*Config)) *elasti
 }
 
 func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) *elasticsearchTracesExporter {
-	exporter, err := newTracesExporter(zaptest.NewLogger(t), withTestTracesExporterConfig(fns...)(url))
+	exporter, err := newTracesExporter(zaptest.NewLogger(t), withTestTracesExporterConfig(fns...)(url), context.TODO())
 	require.NoError(t, err)
 
 	t.Cleanup(func() {

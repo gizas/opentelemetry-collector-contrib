@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	Type = component.MustNewType("elastic")
+	Type = component.MustNewType("elasticsearch")
 )
 
 const (

@@ -30,12 +30,12 @@ type elasticsearchMetricsExporter struct {
 	model       mappingModel
 }
 
-func newMetricsExporter(logger *zap.Logger, cfg *Config) (*elasticsearchMetricsExporter, error) {
+func newMetricsExporter(logger *zap.Logger, cfg *Config, ctx context.Context) (*elasticsearchMetricsExporter, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
 
-	client, err := newElasticsearchClient(logger, cfg)
+	client, err := newElasticsearchClient(logger, cfg, ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -83,7 +83,7 @@ func createLogsExporter(
 
 	setDefaultUserAgentHeader(cf, set.BuildInfo)
 
-	logsExporter, err := newLogsExporter(set.Logger, cf)
+	logsExporter, err := newLogsExporter(set.Logger, cf, ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elasticsearch logsExporter: %w", err)
 	}
@@ -111,7 +111,7 @@ func createMetricsExporter(
 		set.Logger.Warn("index option are deprecated and replaced with metrics_index and traces_index.")
 	}
 
-	exporter, err := newMetricsExporter(set.Logger, cf)
+	exporter, err := newMetricsExporter(set.Logger, cf, ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elasticsearch metrics exporter: %w", err)
 	}
@@ -134,7 +134,7 @@ func createTracesExporter(ctx context.Context,
 
 	setDefaultUserAgentHeader(cf, set.BuildInfo)
 
-	tracesExporter, err := newTracesExporter(set.Logger, cf)
+	tracesExporter, err := newTracesExporter(set.Logger, cf, ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elasticsearch tracesExporter: %w", err)
 	}

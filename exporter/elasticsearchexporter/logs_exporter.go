@@ -36,12 +36,12 @@ var retryOnStatus = []int{500, 502, 503, 504, 429}
 
 const createAction = "create"
 
-func newLogsExporter(logger *zap.Logger, cfg *Config) (*elasticsearchLogsExporter, error) {
+func newLogsExporter(logger *zap.Logger, cfg *Config, ctx context.Context) (*elasticsearchLogsExporter, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
 
-	client, err := newElasticsearchClient(logger, cfg)
+	client, err := newElasticsearchClient(logger, cfg, ctx)
 	if err != nil {
 		return nil, err
 	}
