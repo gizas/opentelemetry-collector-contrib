@@ -3,7 +3,7 @@ package elasticprocessor
 import (
 	"context"
 
-	"github.com/gizas/opentelemetry-collector-contrib/processor/elastic/internal/metadata"
+	metadata "github.com/gizas/opentelemetry-collector-contrib/processor/elasticprocessor/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
@@ -17,9 +17,9 @@ func NewFactory() processor.Factory {
 	return processor.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		processor.WithMetrics(createMetricsProcessor, component.StabilityLevelAlpha),
-		processor.WithLogs(createLogsProcessor, component.StabilityLevelAlpha),
-		processor.WithTraces(createTracesProcessor, component.StabilityLevelAlpha),
+		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
+		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
+		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
 	)
 }
 

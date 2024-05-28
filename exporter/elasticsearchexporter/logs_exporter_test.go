@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package elasticsearchexporter
 
@@ -18,8 +7,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -37,6 +28,12 @@ func TestExporter_New(t *testing.T) {
 	success := func(t *testing.T, exporter *elasticsearchLogsExporter, err error) {
 		require.Nil(t, err)
 		require.NotNil(t, exporter)
+	}
+	successWithInternalModel := func(expectedModel *encodeModel) validate {
+		return func(t *testing.T, exporter *elasticsearchLogsExporter, err error) {
+			assert.Nil(t, err)
+			assert.EqualValues(t, expectedModel, exporter.model)
+		}
 	}
 	successWithDeprecatedIndexOption := func(index string) validate {
 		return func(t *testing.T, exporter *elasticsearchLogsExporter, err error) {
@@ -119,6 +116,14 @@ func TestExporter_New(t *testing.T) {
 			}),
 			want: success,
 		},
+		"create with custom dedup and dedot values": {
+			config: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoints = []string{"test:9200"}
+				cfg.Mapping.Dedot = false
+				cfg.Mapping.Dedup = true
+			}),
+			want: successWithInternalModel(&encodeModel{dedot: false, dedup: true, mapping: "ecs"}),
+		},
 	}
 
 	for name, test := range tests {
@@ -160,6 +165,162 @@ func TestExporter_PushEvent(t *testing.T) {
 		mustSend(t, exporter, `{"message": "test2"}`)
 
 		rec.WaitItems(2)
+	})
+
+	t.Run("publish with dynamic index prefix_suffix mode", func(t *testing.T) {
+
+		rec := newBulkRecorder()
+		var (
+			prefix = "resprefix-"
+			suffix = "-attrsuffix"
+			index  = "someindex"
+		)
+
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+
+			data, err := docs[0].Action.MarshalJSON()
+			assert.Nil(t, err)
+
+			jsonVal := map[string]any{}
+			err = json.Unmarshal(data, &jsonVal)
+			assert.Nil(t, err)
+
+			create := jsonVal["create"].(map[string]any)
+			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
+			assert.Equal(t, expected, create["_index"].(string))
+
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.LogsIndex = index
+			cfg.LogsDynamicIndex.Enabled = true
+		})
+
+		mustSendLogsWithAttributes(t, exporter,
+			map[string]string{
+				indexPrefix: "attrprefix-",
+				indexSuffix: suffix,
+			},
+			map[string]string{
+				indexPrefix: prefix,
+			},
+		)
+
+		rec.WaitItems(1)
+	})
+
+	t.Run("publish with dynamic index data_stream mode", func(t *testing.T) {
+
+		rec := newBulkRecorder()
+
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+
+			data, err := docs[0].Action.MarshalJSON()
+			assert.Nil(t, err)
+
+			jsonVal := map[string]any{}
+			err = json.Unmarshal(data, &jsonVal)
+			assert.Nil(t, err)
+
+			create := jsonVal["create"].(map[string]any)
+			expected := "logs-my.dataset-my.namespace"
+			assert.Equal(t, expected, create["_index"].(string))
+
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.LogsDynamicIndex.Enabled = true
+			cfg.LogsDynamicIndex.Mode = "data_stream"
+		})
+
+		mustSendLogsWithAttributes(t, exporter,
+			map[string]string{
+				"data_stream.dataset": "my.dataset",
+			},
+			map[string]string{
+				"data_stream.namespace": "my.namespace",
+			},
+		)
+
+		rec.WaitItems(1)
+	})
+
+	t.Run("publish with logstash index format enabled and dynamic index disabled", func(t *testing.T) {
+		var defaultCfg Config
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+
+			data, err := docs[0].Action.MarshalJSON()
+			assert.Nil(t, err)
+
+			jsonVal := map[string]any{}
+			err = json.Unmarshal(data, &jsonVal)
+			assert.Nil(t, err)
+
+			create := jsonVal["create"].(map[string]any)
+
+			assert.Equal(t, strings.Contains(create["_index"].(string), defaultCfg.LogsIndex), true)
+
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.LogstashFormat.Enabled = true
+			cfg.LogsIndex = "not-used-index"
+			defaultCfg = *cfg
+		})
+
+		mustSendLogsWithAttributes(t, exporter, nil, nil)
+
+		rec.WaitItems(1)
+	})
+
+	t.Run("publish with logstash index format enabled and dynamic index enabled", func(t *testing.T) {
+		var (
+			prefix = "resprefix-"
+			suffix = "-attrsuffix"
+			index  = "someindex"
+		)
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+
+			data, err := docs[0].Action.MarshalJSON()
+			assert.Nil(t, err)
+
+			jsonVal := map[string]any{}
+			err = json.Unmarshal(data, &jsonVal)
+			assert.Nil(t, err)
+
+			create := jsonVal["create"].(map[string]any)
+			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
+
+			assert.Equal(t, strings.Contains(create["_index"].(string), expected), true)
+
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.LogsIndex = index
+			cfg.LogsDynamicIndex.Enabled = true
+			cfg.LogstashFormat.Enabled = true
+		})
+
+		mustSendLogsWithAttributes(t, exporter,
+			map[string]string{
+				indexPrefix: "attrprefix-",
+				indexSuffix: suffix,
+			},
+			map[string]string{
+				indexPrefix: prefix,
+			},
+		)
+		rec.WaitItems(1)
 	})
 
 	t.Run("retry http request", func(t *testing.T) {
@@ -349,5 +510,18 @@ func withTestExporterConfig(fns ...func(*Config)) func(string) *Config {
 
 func mustSend(t *testing.T, exporter *elasticsearchLogsExporter, contents string) {
 	err := pushDocuments(context.TODO(), zap.L(), exporter.index, []byte(contents), exporter.bulkIndexer, exporter.maxAttempts)
+	require.NoError(t, err)
+}
+
+// send trace with span & resource attributes
+func mustSendLogsWithAttributes(t *testing.T, exporter *elasticsearchLogsExporter, attrMp map[string]string, resMp map[string]string) {
+	logs := newLogsWithAttributeAndResourceMap(attrMp, resMp)
+	resLogs := logs.ResourceLogs().At(0)
+	logRecords := resLogs.ScopeLogs().At(0).LogRecords().At(0)
+
+	scopeLogs := resLogs.ScopeLogs().AppendEmpty()
+	scope := scopeLogs.Scope()
+
+	err := exporter.pushLogRecord(context.TODO(), resLogs.Resource(), logRecords, scope)
 	require.NoError(t, err)
 }

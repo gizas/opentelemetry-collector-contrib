@@ -1,0 +1,10 @@
+type: elasticsearch
+
+status:
+  class: exporter
+  stability:
+    beta: [traces, logs]
+    development: [metrics]
+  distributions: [contrib, observiq]
+  codeowners:
+    active: [JaredTan95]

@@ -1,56 +1,54 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+//go:generate mdatagen metadata.yaml
 
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 )
 
 const (
 	// The value of "type" key in configuration.
-	typeStr            = "elasticsearch"
-	defaultLogsIndex   = "logs-generic-default"
-	defaultTracesIndex = "traces-generic-default"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
+	defaultLogsIndex    = "logs-generic-default"
+	defaultMetricsIndex = "metrics-generic-default"
+	defaultTracesIndex  = "traces-generic-default"
+	userAgentHeaderKey  = "User-Agent"
 )
 
 // NewFactory creates a factory for Elastic exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exporter.WithLogs(createLogsExporter, stability),
-		exporter.WithTraces(createTracesExporter, stability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
 	)
 }
 
 func createDefaultConfig() component.Config {
+	qs := exporterhelper.NewDefaultQueueSettings()
+	qs.Enabled = false
 	return &Config{
+		QueueSettings: qs,
 		HTTPClientSettings: HTTPClientSettings{
 			Timeout: 90 * time.Second,
 		},
-		Index:       "",
-		LogsIndex:   defaultLogsIndex,
-		TracesIndex: defaultTracesIndex,
+		Index:        "",
+		LogsIndex:    defaultLogsIndex,
+		MetricsIndex: defaultMetricsIndex,
+		TracesIndex:  defaultTracesIndex,
 		Retry: RetrySettings{
 			Enabled:         true,
 			MaxRequests:     3,
@@ -61,6 +59,11 @@ func createDefaultConfig() component.Config {
 			Mode:  "ecs",
 			Dedup: true,
 			Dedot: true,
+		},
+		LogstashFormat: LogstashFormatSettings{
+			Enabled:         false,
+			PrefixSeparator: "-",
+			DateFormat:      "%Y.%m.%d",
 		},
 	}
 }
@@ -73,21 +76,53 @@ func createLogsExporter(
 	set exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
-	if cfg.(*Config).Index != "" {
+	cf := cfg.(*Config)
+	if cf.Index != "" {
 		set.Logger.Warn("index option are deprecated and replaced with logs_index and traces_index.")
 	}
 
-	exporter, err := newLogsExporter(set.Logger, cfg.(*Config))
+	setDefaultUserAgentHeader(cf, set.BuildInfo)
+
+	logsExporter, err := newLogsExporter(set.Logger, cf)
 	if err != nil {
-		return nil, fmt.Errorf("cannot configure Elasticsearch logs exporter: %w", err)
+		return nil, fmt.Errorf("cannot configure Elasticsearch logsExporter: %w", err)
 	}
 
 	return exporterhelper.NewLogsExporter(
 		ctx,
 		set,
 		cfg,
-		exporter.pushLogsData,
+		logsExporter.pushLogsData,
+		exporterhelper.WithShutdown(logsExporter.Shutdown),
+		exporterhelper.WithQueue(cf.QueueSettings),
+	)
+}
+
+// createMetricsExporter creates a new exporter for Metrics.
+//
+// Metrics are directly indexed into Elasticsearch.
+func createMetricsExporter(
+	ctx context.Context,
+	set exporter.CreateSettings,
+	cfg component.Config,
+) (exporter.Metrics, error) {
+	cf := cfg.(*Config)
+	if cf.Index != "" {
+		set.Logger.Warn("index option are deprecated and replaced with metrics_index and traces_index.")
+	}
+
+	exporter, err := newMetricsExporter(set.Logger, cf)
+	if err != nil {
+		return nil, fmt.Errorf("cannot configure Elasticsearch metrics exporter: %w", err)
+	}
+
+	return exporterhelper.NewMetricsExporter(
+		ctx,
+		set,
+		cfg,
+		exporter.pushMetricsData,
 		exporterhelper.WithShutdown(exporter.Shutdown),
+		exporterhelper.WithQueue(cf.QueueSettings),
 	)
 }
 
@@ -95,10 +130,30 @@ func createTracesExporter(ctx context.Context,
 	set exporter.CreateSettings,
 	cfg component.Config) (exporter.Traces, error) {
 
-	exporter, err := newTracesExporter(set.Logger, cfg.(*Config))
+	cf := cfg.(*Config)
+
+	setDefaultUserAgentHeader(cf, set.BuildInfo)
+
+	tracesExporter, err := newTracesExporter(set.Logger, cf)
 	if err != nil {
-		return nil, fmt.Errorf("cannot configure Elasticsearch traces exporter: %w", err)
+		return nil, fmt.Errorf("cannot configure Elasticsearch tracesExporter: %w", err)
 	}
-	return exporterhelper.NewTracesExporter(ctx, set, cfg, exporter.pushTraceData,
-		exporterhelper.WithShutdown(exporter.Shutdown))
+	return exporterhelper.NewTracesExporter(
+		ctx,
+		set,
+		cfg,
+		tracesExporter.pushTraceData,
+		exporterhelper.WithShutdown(tracesExporter.Shutdown),
+		exporterhelper.WithQueue(cf.QueueSettings))
+}
+
+// set default User-Agent header with BuildInfo if User-Agent is empty
+func setDefaultUserAgentHeader(cf *Config, info component.BuildInfo) {
+	if _, found := cf.Headers[userAgentHeaderKey]; found {
+		return
+	}
+	if cf.Headers == nil {
+		cf.Headers = make(map[string]string)
+	}
+	cf.Headers[userAgentHeaderKey] = fmt.Sprintf("%s/%s (%s/%s)", info.Description, info.Version, runtime.GOOS, runtime.GOARCH)
 }

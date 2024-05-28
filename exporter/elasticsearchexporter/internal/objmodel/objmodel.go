@@ -1,16 +1,5 @@
-// Copyright 2021, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 // The objmodel package provides tools for converting OpenTelemetry Log records into
 // JSON documents.
@@ -53,6 +42,7 @@ import (
 	"github.com/elastic/go-structform"
 	"github.com/elastic/go-structform/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 // Document is an intermediate representation for converting open telemetry records with arbitrary attributes
@@ -118,6 +108,12 @@ func DocumentFromAttributesWithPath(path string, am pcommon.Map) Document {
 	return Document{fields}
 }
 
+func (doc *Document) Clone() Document {
+	fields := make([]field, len(doc.fields))
+	copy(fields, doc.fields)
+	return Document{fields}
+}
+
 // AddTimestamp adds a raw timestamp value to the Document.
 func (doc *Document) AddTimestamp(key string, ts pcommon.Timestamp) {
 	doc.Add(key, TimestampValue(ts.AsTime()))
@@ -172,6 +168,15 @@ func (doc *Document) AddAttribute(key string, attribute pcommon.Value) {
 		doc.AddAttributes(key, attribute.Map())
 	default:
 		doc.Add(key, ValueFromAttribute(attribute))
+	}
+}
+
+// AddEvents converts and adds span events to the document.
+func (doc *Document) AddEvents(key string, events ptrace.SpanEventSlice) {
+	for i := 0; i < events.Len(); i++ {
+		e := events.At(i)
+		doc.AddTimestamp(flattenKey(key, e.Name()+".time"), e.Timestamp())
+		doc.AddAttributes(flattenKey(key, e.Name()), e.Attributes())
 	}
 }
 
@@ -271,7 +276,7 @@ func (doc *Document) iterJSONFlat(w *json.Visitor) error {
 			return err
 		}
 
-		if err := fld.value.iterJSON(w, true); err != nil {
+		if err := fld.value.iterJSON(w, false); err != nil {
 			return err
 		}
 	}
@@ -523,9 +528,9 @@ func appendAttributeValue(fields []field, path string, key string, attr pcommon.
 		return fields
 	}
 
-	if attr.Type() == pcommon.ValueTypeMap {
-		return appendAttributeFields(fields, flattenKey(path, key), attr.Map())
-	}
+	// if attr.Type() == pcommon.ValueTypeMap {
+	// 	return appendAttributeFields(fields, flattenKey(path, key), attr.Map())
+	// }
 
 	return append(fields, field{
 		key:   flattenKey(path, key),

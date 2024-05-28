@@ -1,16 +1,5 @@
-// Copyright 2021, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package objmodel
 
@@ -280,33 +269,33 @@ func TestValue_FromAttribute(t *testing.T) {
 
 func TestDocument_Serialize_Flat(t *testing.T) {
 	tests := map[string]struct {
-		attrs map[string]interface{}
+		attrs map[string]any
 		want  string
 	}{
 		"no nesting with multiple fields": {
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				"a": "test",
 				"b": 1,
 			},
 			want: `{"a":"test","b":1}`,
 		},
 		"shared prefix": {
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				"a.str": "test",
 				"a.i":   1,
 			},
 			want: `{"a.i":1,"a.str":"test"}`,
 		},
 		"multiple namespaces with dot": {
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				"a.str": "test",
 				"b.i":   1,
 			},
 			want: `{"a.str":"test","b.i":1}`,
 		},
 		"nested maps": {
-			attrs: map[string]interface{}{
-				"a": map[string]interface{}{
+			attrs: map[string]any{
+				"a": map[string]any{
 					"str": "test",
 					"i":   1,
 				},
@@ -314,8 +303,8 @@ func TestDocument_Serialize_Flat(t *testing.T) {
 			want: `{"a.i":1,"a.str":"test"}`,
 		},
 		"multi-level nested namespace maps": {
-			attrs: map[string]interface{}{
-				"a": map[string]interface{}{
+			attrs: map[string]any{
+				"a": map[string]any{
 					"b.str": "test",
 					"i":     1,
 				},
@@ -341,33 +330,33 @@ func TestDocument_Serialize_Flat(t *testing.T) {
 
 func TestDocument_Serialize_Dedot(t *testing.T) {
 	tests := map[string]struct {
-		attrs map[string]interface{}
+		attrs map[string]any
 		want  string
 	}{
 		"no nesting with multiple fields": {
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				"a": "test",
 				"b": 1,
 			},
 			want: `{"a":"test","b":1}`,
 		},
 		"shared prefix": {
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				"a.str": "test",
 				"a.i":   1,
 			},
 			want: `{"a":{"i":1,"str":"test"}}`,
 		},
 		"multiple namespaces": {
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				"a.str": "test",
 				"b.i":   1,
 			},
 			want: `{"a":{"str":"test"},"b":{"i":1}}`,
 		},
 		"nested maps": {
-			attrs: map[string]interface{}{
-				"a": map[string]interface{}{
+			attrs: map[string]any{
+				"a": map[string]any{
 					"str": "test",
 					"i":   1,
 				},
@@ -375,8 +364,8 @@ func TestDocument_Serialize_Dedot(t *testing.T) {
 			want: `{"a":{"i":1,"str":"test"}}`,
 		},
 		"multi-level nested namespace maps": {
-			attrs: map[string]interface{}{
-				"a": map[string]interface{}{
+			attrs: map[string]any{
+				"a": map[string]any{
 					"b.c.str": "test",
 					"i":       1,
 				},
