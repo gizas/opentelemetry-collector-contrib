@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/gizas/opentelemetry-collector-contrib/processor/elasticprocessor/internal/k8smetrics"
+	k8smetrics "github.com/gizas/opentelemetry-collector-contrib/processor/elasticprocessor/internal/k8smetrics"
 
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -34,8 +34,8 @@ func (p *ElasticProcessor) processMetrics(_ context.Context, md pmetric.Metrics)
 
 			if p.cfg.AddK8sMetrics {
 				if strings.HasPrefix(scopeMetric.Scope().Name(), "otelcol/kubeletstatsreceiver") || strings.HasPrefix(scopeMetric.Scope().Name(), "otelcol/k8sclusterreceiver") {
-					if err := k8smetrics.AddElasticSystemMetrics(scopeMetric, rm, p.storage); err != nil {
-						p.logger.Error("error adding hostmetrics data", zap.Error(err))
+					if err := k8smetrics.AddElasticK8sMetrics(scopeMetric, rm, p.storage); err != nil {
+						p.logger.Error("error adding Kubernetes data", zap.Error(err))
 					}
 				}
 			}
