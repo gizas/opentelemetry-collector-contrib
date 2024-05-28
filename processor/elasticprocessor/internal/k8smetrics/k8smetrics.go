@@ -10,9 +10,10 @@ import (
 )
 
 var groupToElasticDataset = map[string]string{
-	"container": "kubernetes.container",
-	"pod":       "kubernetes.pod",
-	"node":      "kubernetes.node",
+	"kubeletstatsreceiver": "kubernetes.pod",
+	"container":            "kubernetes.container",
+	"pod":                  "kubernetes.pod",
+	"node":                 "kubernetes.node",
 }
 
 // AddElasticK8sMetrics computes additional metrics for compatibility with the Elastic system integration.
@@ -35,6 +36,8 @@ func AddElasticK8sMetrics(scopeMetrics pmetric.ScopeMetrics, resource pcommon.Re
 	storage["lastScrape"] = currentTime
 
 	switch group {
+	case "kubeletstatsreceiver":
+		return addPodMetrics(scopeMetrics.Metrics(), resource, dataset)
 	case "container":
 		return addContainerMetrics(scopeMetrics.Metrics(), resource, dataset)
 	case "pod":
