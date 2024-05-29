@@ -44,5 +44,5 @@ func addDatastream(name string) string {
 		datastream = splitted_metric[1]
 	}
 
-	return prefix + datastream
+	return prefix + "." + datastream
 }
