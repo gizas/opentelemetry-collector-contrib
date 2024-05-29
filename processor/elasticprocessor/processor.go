@@ -35,6 +35,11 @@ func (p *ElasticProcessor) processMetrics(_ context.Context, md pmetric.Metrics)
 			if p.cfg.AddK8sMetrics {
 				if strings.HasPrefix(scopeMetric.Scope().Name(), "otelcol/kubeletstatsreceiver") || strings.HasPrefix(scopeMetric.Scope().Name(), "otelcol/k8sclusterreceiver") {
 					if err := k8smetrics.AddElasticK8sMetrics(scopeMetric, rm, p.storage); err != nil {
+						// p.logger.Info("Retrying to index",
+						// zap.String("name", rm.Attributes().Get()),
+						// zap.Int("attempt", attempts),
+						// zap.Int("status", resp.Status),
+						// zap.NamedError("reason", err))
 						p.logger.Error("error adding Kubernetes data", zap.Error(err))
 					}
 				}

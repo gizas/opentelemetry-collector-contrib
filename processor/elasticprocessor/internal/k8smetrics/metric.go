@@ -22,7 +22,7 @@ type metric struct {
 	attributes     *pcommon.Map
 }
 
-func addMetrics(ms pmetric.MetricSlice, resource pcommon.Resource, dataset string, metrics ...metric) {
+func addMetrics(ms pmetric.MetricSlice, resource pcommon.Resource, group string, metrics ...metric) {
 	ms.EnsureCapacity(ms.Len() + len(metrics))
 
 	for _, metric := range metrics {
@@ -51,10 +51,8 @@ func addMetrics(ms pmetric.MetricSlice, resource pcommon.Resource, dataset strin
 		if metric.attributes != nil {
 			metric.attributes.CopyTo(dp.Attributes())
 		}
-		// if dataset == "system.process" {
-		// 	// Add resource attribute as an attribute to each datapoint
-		// 	addProcessAttributes(resource, dp)
-		// }
+		// Calculate datastream attribute as an attribute to each datapoint
+		dataset := addDatastream(metric.name, group)
 
 		dp.Attributes().PutStr("data_stream.dataset", dataset)
 	}

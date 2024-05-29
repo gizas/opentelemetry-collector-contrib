@@ -12,13 +12,13 @@ func addContainerMetrics(metrics pmetric.MetricSlice, resource pcommon.Resource,
 	// iterate all metrics in the current scope and generate the additional Elastic kubernetes integration metrics
 	for i := 0; i < metrics.Len(); i++ {
 		metric := metrics.At(i)
-		if metric.Name() == "k8s.container.cpu_limit_utilization" {
+		if metric.Name() == "k8s.container.cpu.limit.utilization" {
 			dp := metric.Gauge().DataPoints().At(0)
 			if timestamp == 0 {
 				timestamp = dp.Timestamp()
 			}
 			cpu_limit_utilization = dp.DoubleValue()
-		} else if metric.Name() == "k8s.container.memory_limit_utilization" {
+		} else if metric.Name() == "k8s.container.memory.limit.utilization" {
 			dp := metric.Gauge().DataPoints().At(0)
 			if timestamp == 0 {
 				timestamp = dp.Timestamp()
