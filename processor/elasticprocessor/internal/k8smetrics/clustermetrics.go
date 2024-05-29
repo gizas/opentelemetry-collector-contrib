@@ -5,40 +5,40 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func addContainerMetrics(metrics pmetric.MetricSlice, resource pcommon.Resource, dataset string) error {
+func addClusterMetrics(metrics pmetric.MetricSlice, group string) error {
 	var timestamp pcommon.Timestamp
-	var cpu_limit_utilization, memory_usage_limit_pct float64
+	var node_allocatable_memory, node_allocatable_cpu float64
 
 	// iterate all metrics in the current scope and generate the additional Elastic kubernetes integration metrics
 	for i := 0; i < metrics.Len(); i++ {
 		metric := metrics.At(i)
-		if metric.Name() == "k8s.container.cpu.limit.utilization" {
+		if metric.Name() == "k8s.node.allocatable_cpu" {
 			dp := metric.Gauge().DataPoints().At(0)
 			if timestamp == 0 {
 				timestamp = dp.Timestamp()
 			}
-			cpu_limit_utilization = dp.DoubleValue()
-		} else if metric.Name() == "k8s.container.memory.limit.utilization" {
+			node_allocatable_cpu = dp.DoubleValue()
+		} else if metric.Name() == "k8s.node.allocatable_memory" {
 			dp := metric.Gauge().DataPoints().At(0)
 			if timestamp == 0 {
 				timestamp = dp.Timestamp()
 			}
-			memory_usage_limit_pct = dp.DoubleValue()
+			node_allocatable_memory = dp.DoubleValue()
 		}
 	}
 
-	addMetrics(metrics, resource, dataset,
+	addMetrics(metrics, group,
 		metric{
 			dataType:    Gauge,
-			name:        "kubernetes.container.cpu.usage.limit.pct",
+			name:        "kubernetes.node.cpu.allocatable.cores",
 			timestamp:   timestamp,
-			doubleValue: &cpu_limit_utilization,
+			doubleValue: &node_allocatable_cpu,
 		},
 		metric{
 			dataType:    Gauge,
-			name:        "kubernetes.container.memory.usage.limit.pct",
+			name:        "kubernetes.node.memory.allocatable.bytes",
 			timestamp:   timestamp,
-			doubleValue: &memory_usage_limit_pct,
+			doubleValue: &node_allocatable_memory,
 		},
 	)
 

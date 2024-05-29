@@ -7,7 +7,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func addkubeletMetrics(metrics pmetric.MetricSlice, resource pcommon.Resource, group string) error {
+func addkubeletMetrics(metrics pmetric.MetricSlice, group string) error {
 	var timestamp pcommon.Timestamp
 	var total_transmited, total_received, memory_usage, filesystem_capacity, filesystem_usage int64
 	var cpu_limit_utilization, container_cpu_limit_utilization, memory_usage_limit_pct, memory_limit_utilization, cpu_usage float64
@@ -17,13 +17,13 @@ func addkubeletMetrics(metrics pmetric.MetricSlice, resource pcommon.Resource, g
 	//pod
 	for i := 0; i < metrics.Len(); i++ {
 		metric := metrics.At(i)
-		if metric.Name() == "k8s.pod.cpu.limit.utilization" {
+		if metric.Name() == "k8s.pod.cpu_limit_utilization" {
 			dp := metric.Gauge().DataPoints().At(0)
 			if timestamp == 0 {
 				timestamp = dp.Timestamp()
 			}
 			cpu_limit_utilization = dp.DoubleValue()
-		} else if metric.Name() == "k8s.pod.memory.limit.utilization" {
+		} else if metric.Name() == "k8s.pod.memory_limit_utilization" {
 			dp := metric.Gauge().DataPoints().At(0)
 			if timestamp == 0 {
 				timestamp = dp.Timestamp()
@@ -73,13 +73,13 @@ func addkubeletMetrics(metrics pmetric.MetricSlice, resource pcommon.Resource, g
 			}
 			filesystem_usage = dp.IntValue()
 			// container
-		} else if metric.Name() == "k8s.container.cpu.limit.utilization" {
+		} else if metric.Name() == "k8s.container.cpu_limit_utilization" {
 			dp := metric.Gauge().DataPoints().At(0)
 			if timestamp == 0 {
 				timestamp = dp.Timestamp()
 			}
 			container_cpu_limit_utilization = dp.DoubleValue()
-		} else if metric.Name() == "k8s.container.memory.limit.utilization" {
+		} else if metric.Name() == "k8s.container.memory_limit_utilization" {
 			dp := metric.Gauge().DataPoints().At(0)
 			if timestamp == 0 {
 				timestamp = dp.Timestamp()
@@ -89,7 +89,7 @@ func addkubeletMetrics(metrics pmetric.MetricSlice, resource pcommon.Resource, g
 
 	}
 
-	addMetrics(metrics, resource, group,
+	addMetrics(metrics, group,
 		metric{
 			dataType:    Gauge,
 			name:        "kubernetes.pod.cpu.usage.limit.pct",

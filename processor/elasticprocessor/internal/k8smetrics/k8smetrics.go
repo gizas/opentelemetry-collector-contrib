@@ -26,40 +26,23 @@ func AddElasticK8sMetrics(scopeMetrics pmetric.ScopeMetrics, resource pcommon.Re
 
 	switch group {
 	case "kubeletstatsreceiver":
-		return addkubeletMetrics(scopeMetrics.Metrics(), resource, group)
-	// case "container":
-	// 	return addContainerMetrics(scopeMetrics.Metrics(), resource, dataset)
-	// case "pod":
-	// 	return addPodMetrics(scopeMetrics.Metrics(), resource, dataset)
-	// case "node":
-	// 	return addNodeMetrics(scopeMetrics.Metrics(), resource, dataset)
+		return addkubeletMetrics(scopeMetrics.Metrics(), group)
+	case "k8sclusterreceiver":
+		return addClusterMetrics(scopeMetrics.Metrics(), group)
 	default:
 		return fmt.Errorf("no matching transform function found for scope '%s'", scope.Name())
 	}
 }
 
 // addDatastream calculates the datastream_dataset name of the metric based on the name of the metric provided
-func addDatastream(name string, group string) string {
+func addDatastream(name string) string {
 	splitted_metric := strings.Split(name, ".")
 	datastream := ""
 	prefix := "kubernetes"
 
 	if splitted_metric[0] == "kubernetes" {
-		switch splitted_metric[1] {
-		case "pod":
-			datastream = "pod"
-		case "container":
-			datastream = "container"
-		case "node":
-			datastream = "node"
-		}
+		datastream = splitted_metric[1]
 	}
 
-	if group == "kubeletstatsreceiver" {
-		datastream = prefix + "." + datastream
-	} else if group == "k8sclusterreceiver" {
-		datastream = prefix + ".state_" + datastream
-	}
-
-	return datastream
+	return prefix + datastream
 }
