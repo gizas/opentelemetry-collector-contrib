@@ -16,6 +16,7 @@ import (
 	loggingexporter "go.opentelemetry.io/collector/exporter/loggingexporter"
 	elasticsearchexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 	zipkinexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter"
+	otlpexporter "go.opentelemetry.io/collector/exporter/otlpexporter"
 	zpagesextension "go.opentelemetry.io/collector/extension/zpagesextension"
 	ballastextension "go.opentelemetry.io/collector/extension/ballastextension"
 	hostobserver "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
@@ -73,6 +74,7 @@ func components() (otelcol.Factories, error) {
 		loggingexporter.NewFactory(),
 		elasticsearchexporter.NewFactory(),
 		zipkinexporter.NewFactory(),
+		otlpexporter.NewFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err

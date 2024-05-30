@@ -1,0 +1,183 @@
+PUT _ingest/pipeline/metrics-otel.generic-default
+{
+  "description": "Pipeline for `my_app` dataset",
+  "processors": [ 
+    {
+        "dot_expander": {
+          "field": "*",
+          "path": "metrics",
+          "override": true,
+          "ignore_failure": true
+        }
+      },
+      {
+        "dot_expander": {
+          "field": "*",
+          "path": "resource.attributes",
+          "override": true,
+          "ignore_failure": true
+        }
+      },
+      {
+        "dot_expander": {
+          "field": "*",
+          "path": "resource.attributes.k8s",
+          "override": true,
+          "ignore_failure": true
+        }
+      },
+      {
+        "dot_expander": {
+          "field": "*",
+          "path": "attributes",
+          "override": true,
+          "ignore_failure": true
+        }
+      },
+      {
+        "set": {
+          "field": "kubernetes.pod.cpu.usage.limit.pct",
+          "ignore_failure": true,
+          "copy_from": "metrics.kubernetes.pod.cpu.usage.limit.pct"
+        }
+      },{
+        "set": {
+          "field": "kubernetes.pod.memory.usage.limit.pct",
+          "ignore_failure": true,
+          "copy_from": "metrics.kubernetes.pod.memory.usage.limit.pct"
+        }
+},
+{
+        "set": {
+          "field": "kubernetes.pod.network.tx.bytes",
+          "ignore_failure": true,
+          "copy_from": "metrics.kubernetes.pod.network.tx.bytes"
+        }
+},
+{
+        "set": {
+          "field": "kubernetes.pod.network.rx.bytes",
+          "ignore_failure": true,
+          "copy_from": "metrics.kubernetes.pod.network.rx.bytes"
+        }
+},
+{
+    "set": {
+      "field": "kubernetes.node.cpu.usage.nanocores",
+      "ignore_failure": true,
+      "copy_from": "metrics.kubernetes.node.cpu.usage.nanocores"
+    }
+},
+{
+    "set": {
+      "field": "kubernetes.node.memory.usage.bytes",
+      "ignore_failure": true,
+      "copy_from": "metrics.kubernetes.node.memory.usage.bytes"
+    }
+},
+{
+    "set": {
+      "field": "kubernetes.node.fs.capacity.bytes",
+      "ignore_failure": true,
+      "copy_from": "metrics.kubernetes.node.fs.capacity.bytes"
+    }
+},
+{
+    "set": {
+      "field": "kubernetes.node.fs.used.bytes",
+      "ignore_failure": true,
+      "copy_from": "metrics.kubernetes.node.fs.used.bytes"
+    }
+},
+{
+    "set": {
+      "field": "kubernetes.container.cpu.usage.limit.pct",
+      "ignore_failure": true,
+      "copy_from": "metrics.kubernetes.container.cpu.usage.limit.pct"
+    }
+},
+{
+    "set": {
+      "field": "kubernetes.container.memory.usage.limit.pct",
+      "ignore_failure": true,
+      "copy_from": "metrics.kubernetes.container.memory.usage.limit.pct"
+    }
+},
+{
+    "set": {
+      "field": "kubernetes.namespace",
+      "ignore_failure": true,
+      "copy_from": "resource.attributes.k8s.namespace.name"
+    }
+},
+{
+    "set": {
+      "field": "kubernetes.node.name",
+      "ignore_failure": true,
+      "copy_from": "resource.attributes.k8s.node.name"
+    }
+},
+{
+    "set": {
+      "field": "kubernetes.pod.name",
+      "ignore_failure": true,
+      "copy_from": "resource.attributes.k8s.pod.name"
+    }
+},
+{
+    "set": {
+      "field": "kubernetes.deployment.name",
+      "ignore_failure": true,
+      "copy_from": "resource.attributes.k8s.deployment.name"
+    }
+},
+{
+    "set": {
+      "field": "kubernetes.container.image",
+      "ignore_failure": true,
+      "copy_from": "resource.attributes.container.image.name"
+    }
+},
+{
+    "set": {
+      "field": "kubernetes.container.name",
+      "ignore_failure": true,
+      "copy_from": "resource.attributes.k8s.container.name"
+    }
+},
+{
+    "set": {
+      "field": "data_stream.dataset",
+      "ignore_failure": true,
+      "copy_from": "attributes.data_stream.dataset"
+    }
+},
+{
+    "set": {
+      "field": "event.module",
+      "ignore_failure": true,
+      "copy_from": "attributes.event.module"
+    }
+}
+    ]
+}
+
+
+PUT _component_template/metrics-otel.generic-settings
+{
+  "template": {
+    "settings": {
+      "index.default_pipeline": "metrics-otel.generic-default",
+      "index.lifecycle.name": "metrics"
+    }
+  }
+}
+
+
+PUT _index_template/metrics-otel.generic-template
+{
+  "index_patterns": ["metrics-otel.generic*"],
+  "data_stream": { },
+  "priority": 500,
+  "composed_of": ["metrics-otel.generic-settings"]
+}

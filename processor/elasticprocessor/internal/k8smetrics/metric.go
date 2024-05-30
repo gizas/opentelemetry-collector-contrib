@@ -48,12 +48,21 @@ func addMetrics(ms pmetric.MetricSlice, group string, metrics ...metric) {
 			dp.SetStartTimestamp(metric.startTimestamp)
 		}
 
-		if metric.attributes != nil {
-			metric.attributes.CopyTo(dp.Attributes())
-		}
 		// Calculate datastream attribute as an attribute to each datapoint
 		dataset := addDatastream(metric.name)
 
+		if metric.attributes != nil {
+			if dataset == "kubernetes.node" {
+				slice, ok := metric.attributes.Get("k8s.node.name")
+				if ok {
+					dp.Attributes().PutStr("k8s.node.name", slice.AsString())
+				}
+
+			} else {
+				metric.attributes.CopyTo(dp.Attributes())
+			}
+		}
+		dp.Attributes().PutStr("event.module", "kubernetes")
 		dp.Attributes().PutStr("data_stream.dataset", dataset)
 	}
 }
