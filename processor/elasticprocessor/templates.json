@@ -147,6 +147,41 @@ PUT _ingest/pipeline/metrics-otel.generic-default
 },
 {
     "set": {
+      "field": "kubernetes.node.cpu.allocatable.cores",
+      "ignore_failure": true,
+      "copy_from": "metrics.kubernetes.node.cpu.allocatable.cores"
+    }
+},
+{
+    "set": {
+      "field": "kubernetes.node.memory.allocatable.bytes",
+      "ignore_failure": true,
+      "copy_from": "metrics.kubernetes.node.memory.allocatable.bytes"
+    }
+},
+{
+    "set": {
+      "field": "kubernetes.pod.uid",
+      "ignore_failure": true,
+      "copy_from": "resource.attributes.k8s.pod.uid"
+    }
+},
+{
+    "set": {
+      "field": "kubernetes.pod.ip",
+      "ignore_failure": true,
+      "value": "6.6.6.6"
+    }
+},
+{
+    "set": {
+      "field": "kubernetes.pod.cpu.usage.node.pct",
+      "ignore_failure": true,
+      "value": "0.5"
+    }
+},
+{
+    "set": {
       "field": "data_stream.dataset",
       "ignore_failure": true,
       "copy_from": "attributes.data_stream.dataset"
@@ -154,9 +189,29 @@ PUT _ingest/pipeline/metrics-otel.generic-default
 },
 {
     "set": {
+      "field": "data_stream.namespace",
+      "ignore_failure": true,
+      "value": "default"
+    }
+},
+{
+    "set": {
+      "field": "data_stream.type",
+      "ignore_failure": true,
+      "value": "metrics"
+    }
+},
+{
+    "set": {
       "field": "event.module",
       "ignore_failure": true,
       "copy_from": "attributes.event.module"
+    }
+},{
+    "set": {
+      "field": "event.dataset",
+      "ignore_failure": true,
+      "copy_from": "attributes.data_stream.dataset"
     }
 }
     ]

@@ -17,6 +17,7 @@ func addkubeletMetrics(metrics pmetric.MetricSlice, group string) error {
 	//pod
 	for i := 0; i < metrics.Len(); i++ {
 		metric := metrics.At(i)
+		// kubernetes.pod.cpu.usage.node.pct still needs to be implemented
 		if metric.Name() == "k8s.pod.cpu_limit_utilization" {
 			dp := metric.Gauge().DataPoints().At(0)
 			if timestamp == 0 {
