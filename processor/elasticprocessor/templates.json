@@ -170,7 +170,7 @@ PUT _ingest/pipeline/metrics-otel.generic-default
     "set": {
       "field": "kubernetes.pod.cpu.usage.node.pct",
       "ignore_failure": true,
-      "value": "2"
+      "value": "0.2"
     }
 },
 {
