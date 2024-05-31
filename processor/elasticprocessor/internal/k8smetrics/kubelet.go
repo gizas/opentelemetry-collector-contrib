@@ -23,13 +23,13 @@ func addkubeletMetrics(metrics pmetric.MetricSlice, group string) error {
 			if timestamp == 0 {
 				timestamp = dp.Timestamp()
 			}
-			cpu_limit_utilization = dp.DoubleValue()
+			cpu_limit_utilization = dp.DoubleValue() * 100
 		} else if metric.Name() == "k8s.pod.memory_limit_utilization" {
 			dp := metric.Gauge().DataPoints().At(0)
 			if timestamp == 0 {
 				timestamp = dp.Timestamp()
 			}
-			memory_limit_utilization = dp.DoubleValue()
+			memory_limit_utilization = dp.DoubleValue() * 100
 		} else if metric.Name() == "k8s.pod.network.io" {
 			dataPoints := metric.Sum().DataPoints()
 			for j := 0; j < dataPoints.Len(); j++ {
@@ -52,13 +52,13 @@ func addkubeletMetrics(metrics pmetric.MetricSlice, group string) error {
 		} else if metric.Name() == "k8s.node.cpu.usage" {
 			dp := metric.Gauge().DataPoints().At(0)
 			if timestamp == 0 {
-				timestamp = dp.Timestamp()
+				timestamp = dp.Timestamp() * 100
 			}
 			cpu_usage = dp.DoubleValue() * math.Pow10(9)
 		} else if metric.Name() == "k8s.node.memory.usage" {
 			dp := metric.Gauge().DataPoints().At(0)
 			if timestamp == 0 {
-				timestamp = dp.Timestamp()
+				timestamp = dp.Timestamp() * 100
 			}
 			memory_usage = dp.IntValue()
 		} else if metric.Name() == "k8s.node.filesystem.capacity" {
@@ -70,14 +70,14 @@ func addkubeletMetrics(metrics pmetric.MetricSlice, group string) error {
 		} else if metric.Name() == "k8s.node.filesystem.usage" {
 			dp := metric.Gauge().DataPoints().At(0)
 			if timestamp == 0 {
-				timestamp = dp.Timestamp()
+				timestamp = dp.Timestamp() * 100
 			}
 			filesystem_usage = dp.IntValue()
 			// container
 		} else if metric.Name() == "k8s.container.cpu_limit_utilization" {
 			dp := metric.Gauge().DataPoints().At(0)
 			if timestamp == 0 {
-				timestamp = dp.Timestamp()
+				timestamp = dp.Timestamp() * 100
 			}
 			container_cpu_limit_utilization = dp.DoubleValue()
 		} else if metric.Name() == "k8s.container.memory_limit_utilization" {
@@ -85,7 +85,7 @@ func addkubeletMetrics(metrics pmetric.MetricSlice, group string) error {
 			if timestamp == 0 {
 				timestamp = dp.Timestamp()
 			}
-			memory_usage_limit_pct = dp.DoubleValue()
+			memory_usage_limit_pct = dp.DoubleValue() * 100
 		}
 
 	}

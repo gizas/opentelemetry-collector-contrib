@@ -168,16 +168,9 @@ PUT _ingest/pipeline/metrics-otel.generic-default
 },
 {
     "set": {
-      "field": "kubernetes.pod.ip",
-      "ignore_failure": true,
-      "value": "6.6.6.6"
-    }
-},
-{
-    "set": {
       "field": "kubernetes.pod.cpu.usage.node.pct",
       "ignore_failure": true,
-      "value": "0.5"
+      "value": "2"
     }
 },
 {
@@ -213,7 +206,27 @@ PUT _ingest/pipeline/metrics-otel.generic-default
       "ignore_failure": true,
       "copy_from": "attributes.data_stream.dataset"
     }
-}
+},
+{
+    "set": {
+      "field": "service.type",
+      "ignore_failure": true,
+      "value": "kubernetes"
+    }
+},
+{
+    "script": {
+      "source": "HashMap attributes = ctx.attributes; if (attributes != null) {     String dataset = attributes[\"data_stream.dataset\"];     if ( dataset != null ) {         HashMap data_stream = ctx.data_stream;         if ( data_stream == null) {             data_stream = new HashMap();             data_stream.dataset = dataset;             ctx.data_stream = data_stream;         }          ctx.attributes.remove('data_stream.dataset');     } }"
+    }
+  },
+  {
+    "reroute": {
+      "namespace": [
+        "otel"
+      ],
+      "if": "ctx.data_stream?.dataset != null"
+    }
+  }
     ]
 }
 
