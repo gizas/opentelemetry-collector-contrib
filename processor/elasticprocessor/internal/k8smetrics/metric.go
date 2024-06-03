@@ -52,18 +52,20 @@ func addMetrics(ms pmetric.MetricSlice, group string, metrics ...metric) {
 		dataset := addDatastream(metric.name)
 
 		if metric.attributes != nil {
-			ip, ipok := metric.attributes.Get("k8s.pod.ip")
 			if dataset == "kubernetes.node" {
 				slice, ok := metric.attributes.Get("k8s.node.name")
+				slice_uid, _ := metric.attributes.Get("k8s.node.uid")
+				// slice_pod, _ := metric.attributes.Get("k8s.pod.name")
+				// slice_pod_uid, _ := metric.attributes.Get("k8s.pod.uid")
 				if ok {
 					dp.Attributes().PutStr("k8s.node.name", slice.AsString())
+					dp.Attributes().PutStr("k8s.node.uid", slice_uid.AsString())
+					// dp.Attributes().PutStr("k8s.pod.name", slice_pod.AsString())
+					// dp.Attributes().PutStr("k8s.pod.uid", slice_pod_uid.AsString())
 				}
 
 			} else {
 				metric.attributes.CopyTo(dp.Attributes())
-				if ipok {
-					dp.Attributes().PutStr("k8s.pod.ip", ip.AsString())
-				}
 			}
 		}
 		dp.Attributes().PutStr("event.module", "kubernetes")

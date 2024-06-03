@@ -9,8 +9,8 @@ import (
 
 func addkubeletMetrics(metrics pmetric.MetricSlice, group string) error {
 	var timestamp pcommon.Timestamp
-	var total_transmited, total_received, memory_usage, filesystem_capacity, filesystem_usage int64
-	var cpu_limit_utilization, container_cpu_limit_utilization, memory_usage_limit_pct, memory_limit_utilization, cpu_usage float64
+	var total_transmited, total_received, node_memory_usage, filesystem_capacity, filesystem_usage, node_cpu_utilization, pod_memory_available, pod_memory_usage, pod_memory_usage_node int64
+	var cpu_limit_utilization, container_cpu_limit_utilization, memory_usage_limit_pct, memory_limit_utilization, node_cpu_usage, node_cpu_available, pod_cpu_usage, pod_cpu_usage_node float64
 
 	// iterate all metrics in the current scope and generate the additional Elastic kubernetes integration metrics
 
@@ -24,12 +24,30 @@ func addkubeletMetrics(metrics pmetric.MetricSlice, group string) error {
 				timestamp = dp.Timestamp()
 			}
 			cpu_limit_utilization = dp.DoubleValue()
+		} else if metric.Name() == "k8s.pod.cpu.usage" {
+			dp := metric.Gauge().DataPoints().At(0)
+			if timestamp == 0 {
+				timestamp = dp.Timestamp()
+			}
+			pod_cpu_usage = dp.DoubleValue()
 		} else if metric.Name() == "k8s.pod.memory_limit_utilization" {
 			dp := metric.Gauge().DataPoints().At(0)
 			if timestamp == 0 {
 				timestamp = dp.Timestamp()
 			}
 			memory_limit_utilization = dp.DoubleValue()
+		} else if metric.Name() == "k8s.pod.memory.available" {
+			dp := metric.Gauge().DataPoints().At(0)
+			if timestamp == 0 {
+				timestamp = dp.Timestamp()
+			}
+			pod_memory_available = dp.IntValue()
+		} else if metric.Name() == "k8s.pod.memory.usage" {
+			dp := metric.Gauge().DataPoints().At(0)
+			if timestamp == 0 {
+				timestamp = dp.Timestamp()
+			}
+			pod_memory_usage = dp.IntValue()
 		} else if metric.Name() == "k8s.pod.network.io" {
 			dataPoints := metric.Sum().DataPoints()
 			for j := 0; j < dataPoints.Len(); j++ {
@@ -54,13 +72,19 @@ func addkubeletMetrics(metrics pmetric.MetricSlice, group string) error {
 			if timestamp == 0 {
 				timestamp = dp.Timestamp()
 			}
-			cpu_usage = dp.DoubleValue() * math.Pow10(9)
+			node_cpu_usage = dp.DoubleValue() * math.Pow10(9)
+		} else if metric.Name() == "k8s.node.cpu.utilization" {
+			dp := metric.Gauge().DataPoints().At(0)
+			if timestamp == 0 {
+				timestamp = dp.Timestamp()
+			}
+			node_cpu_utilization = dp.IntValue()
 		} else if metric.Name() == "k8s.node.memory.usage" {
 			dp := metric.Gauge().DataPoints().At(0)
 			if timestamp == 0 {
 				timestamp = dp.Timestamp()
 			}
-			memory_usage = dp.IntValue()
+			node_memory_usage = dp.IntValue()
 		} else if metric.Name() == "k8s.node.filesystem.capacity" {
 			dp := metric.Gauge().DataPoints().At(0)
 			if timestamp == 0 {
@@ -90,12 +114,34 @@ func addkubeletMetrics(metrics pmetric.MetricSlice, group string) error {
 
 	}
 
+	if (node_cpu_utilization) > 0 {
+		node_cpu_available = (node_cpu_usage * float64(1-node_cpu_utilization)) / float64(node_cpu_utilization)
+	}
+	if (node_cpu_available) > 0 {
+		pod_cpu_usage_node = pod_cpu_usage / node_cpu_available
+	}
+	if (pod_memory_available) > 0 {
+		pod_memory_usage_node = pod_memory_usage / pod_memory_available
+	}
+
 	addMetrics(metrics, group,
 		metric{
 			dataType:    Gauge,
 			name:        "kubernetes.pod.cpu.usage.limit.pct",
 			timestamp:   timestamp,
 			doubleValue: &cpu_limit_utilization,
+		},
+		metric{
+			dataType:    Gauge,
+			name:        "kubernetes.pod.cpu.usage.node.pct",
+			timestamp:   timestamp,
+			doubleValue: &pod_cpu_usage_node,
+		},
+		metric{
+			dataType:  Gauge,
+			name:      "kubernetes.pod.memory.usage.node.pct",
+			timestamp: timestamp,
+			intValue:  &pod_memory_usage_node,
 		},
 		metric{
 			dataType:    Gauge,
@@ -118,13 +164,13 @@ func addkubeletMetrics(metrics pmetric.MetricSlice, group string) error {
 			dataType:    Gauge,
 			name:        "kubernetes.node.cpu.usage.nanocores",
 			timestamp:   timestamp,
-			doubleValue: &cpu_usage,
+			doubleValue: &node_cpu_usage,
 		},
 		metric{
 			dataType:  Gauge,
 			name:      "kubernetes.node.memory.usage.bytes",
 			timestamp: timestamp,
-			intValue:  &memory_usage,
+			intValue:  &node_memory_usage,
 		},
 		metric{
 			dataType:  Gauge,
