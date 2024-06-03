@@ -1,6 +1,7 @@
 package hostmetrics
 
 import (
+	"fmt"
 	"math"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -9,8 +10,8 @@ import (
 
 func addkubeletMetrics(metrics pmetric.MetricSlice, group string) error {
 	var timestamp pcommon.Timestamp
-	var total_transmited, total_received, node_memory_usage, filesystem_capacity, filesystem_usage, node_cpu_utilization, pod_memory_available, pod_memory_usage, pod_memory_usage_node int64
-	var cpu_limit_utilization, container_cpu_limit_utilization, memory_usage_limit_pct, memory_limit_utilization, node_cpu_usage, node_cpu_available, pod_cpu_usage, pod_cpu_usage_node float64
+	var total_transmited, total_received, node_memory_usage, filesystem_capacity, filesystem_usage, node_cpu_utilization, pod_memory_available, pod_memory_usage int64
+	var cpu_limit_utilization, container_cpu_limit_utilization, memory_usage_limit_pct, memory_limit_utilization, node_cpu_usage, node_cpu_available, pod_cpu_usage, pod_cpu_usage_node, pod_memory_usage_node float64
 
 	// iterate all metrics in the current scope and generate the additional Elastic kubernetes integration metrics
 
@@ -48,6 +49,12 @@ func addkubeletMetrics(metrics pmetric.MetricSlice, group string) error {
 				timestamp = dp.Timestamp()
 			}
 			pod_memory_usage = dp.IntValue()
+
+			if (pod_memory_available) > 0 {
+				pod_memory_usage_node = float64(pod_memory_usage) / (float64(pod_memory_available) + float64(pod_memory_usage))
+				name, _ := dp.Attributes().Get("k8s.pod.name")
+				return fmt.Errorf("pas %v , %v, s%v , %v", name, pod_memory_usage_node, pod_memory_usage, pod_memory_available)
+			}
 		} else if metric.Name() == "k8s.pod.network.io" {
 			dataPoints := metric.Sum().DataPoints()
 			for j := 0; j < dataPoints.Len(); j++ {
@@ -120,9 +127,6 @@ func addkubeletMetrics(metrics pmetric.MetricSlice, group string) error {
 	if (node_cpu_available) > 0 {
 		pod_cpu_usage_node = pod_cpu_usage / node_cpu_available
 	}
-	if (pod_memory_available) > 0 {
-		pod_memory_usage_node = pod_memory_usage / pod_memory_available
-	}
 
 	addMetrics(metrics, group,
 		metric{
@@ -138,10 +142,10 @@ func addkubeletMetrics(metrics pmetric.MetricSlice, group string) error {
 			doubleValue: &pod_cpu_usage_node,
 		},
 		metric{
-			dataType:  Gauge,
-			name:      "kubernetes.pod.memory.usage.node.pct",
-			timestamp: timestamp,
-			intValue:  &pod_memory_usage_node,
+			dataType:    Gauge,
+			name:        "kubernetes.pod.memory.usage.node.pct",
+			timestamp:   timestamp,
+			doubleValue: &pod_memory_usage_node,
 		},
 		metric{
 			dataType:    Gauge,
