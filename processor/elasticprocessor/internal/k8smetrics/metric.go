@@ -50,28 +50,13 @@ func addMetrics(ms pmetric.MetricSlice, group string, metrics ...metric) {
 
 		// Calculate datastream attribute as an attribute to each datapoint
 		dataset := addDatastream(metric.name)
-
-		if metric.attributes != nil {
-			if dataset == "kubernetes.node" {
-				// slice, ok := metric.attributes.Get("k8s.node.name")
-				// slice_uid, _ := metric.attributes.Get("k8s.node.uid")
-				// // slice_pod, _ := metric.attributes.Get("k8s.pod.name")
-				// // slice_pod_uid, _ := metric.attributes.Get("k8s.pod.uid")
-				// if ok {
-				// 	dp.Attributes().PutStr("k8s.node.name", slice.AsString())
-				// 	dp.Attributes().PutStr("k8s.node.uid", slice_uid.AsString())
-				// 	// dp.Attributes().PutStr("k8s.pod.name", slice_pod.AsString())
-				// 	// dp.Attributes().PutStr("k8s.pod.uid", slice_pod_uid.AsString())
-				// }
-				dataset = "kubernetes.pod"
-			}
-			metric.attributes.CopyTo(dp.Attributes())
-
-			// } else {
-			// 	metric.attributes.CopyTo(dp.Attributes())
-			// }
+		if dataset == "kubernetes.node" {
+			dataset = "kubernetes.pod"
 		}
-		dp.Attributes().PutStr("event.module", "kubernetes")
+		if metric.attributes != nil {
+			metric.attributes.CopyTo(dp.Attributes())
+		}
+		dp.Attributes().PutStr("service.type", "kubernetes")
 		dp.Attributes().PutStr("data_stream.dataset", dataset)
 	}
 }
