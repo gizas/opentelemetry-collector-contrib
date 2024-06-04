@@ -196,13 +196,6 @@ PUT _ingest/pipeline/metrics-otel.generic-default
 },
 {
     "set": {
-      "field": "event.module",
-      "ignore_failure": true,
-      "copy_from": "attributes.event.module"
-    }
-},
-{
-    "set": {
       "field": "event.dataset",
       "ignore_failure": true,
       "copy_from": "attributes.data_stream.dataset"
