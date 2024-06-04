@@ -62,6 +62,20 @@ PUT _ingest/pipeline/metrics-otel.generic-default
         }
 },
 {
+        "set": {
+          "field": "kubernetes.pod.cpu.usage.node.pct",
+          "ignore_failure": true,
+          "copy_from": "metrics.kubernetes.pod.cpu.usage.node.pct"
+        }
+},
+{
+        "set": {
+          "field": "kubernetes.pod.memory.usage.node.pct",
+          "ignore_failure": true,
+          "copy_from": "metrics.kubernetes.pod.memory.usage.node.pct"
+        }
+},
+{
     "set": {
       "field": "kubernetes.node.cpu.usage.nanocores",
       "ignore_failure": true,
@@ -168,41 +182,7 @@ PUT _ingest/pipeline/metrics-otel.generic-default
 },
 {
     "set": {
-      "field": "kubernetes.pod.cpu.usage.node.pct",
-      "ignore_failure": true,
-      "value": "0.2"
-    }
-},
-{
-    "set": {
       "field": "data_stream.dataset",
-      "ignore_failure": true,
-      "copy_from": "attributes.data_stream.dataset"
-    }
-},
-{
-    "set": {
-      "field": "data_stream.namespace",
-      "ignore_failure": true,
-      "value": "default"
-    }
-},
-{
-    "set": {
-      "field": "data_stream.type",
-      "ignore_failure": true,
-      "value": "metrics"
-    }
-},
-{
-    "set": {
-      "field": "event.module",
-      "ignore_failure": true,
-      "copy_from": "attributes.event.module"
-    }
-},{
-    "set": {
-      "field": "event.dataset",
       "ignore_failure": true,
       "copy_from": "attributes.data_stream.dataset"
     }
@@ -211,7 +191,21 @@ PUT _ingest/pipeline/metrics-otel.generic-default
     "set": {
       "field": "service.type",
       "ignore_failure": true,
-      "value": "kubernetes"
+      "copy_from": "attributes.service.type"
+    }
+},
+{
+    "set": {
+      "field": "event.module",
+      "ignore_failure": true,
+      "copy_from": "attributes.event.module"
+    }
+},
+{
+    "set": {
+      "field": "event.dataset",
+      "ignore_failure": true,
+      "copy_from": "attributes.data_stream.dataset"
     }
 },
 {
