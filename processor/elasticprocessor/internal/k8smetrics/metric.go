@@ -56,6 +56,7 @@ func addMetrics(ms pmetric.MetricSlice, group string, metrics ...metric) {
 		if metric.attributes != nil {
 			metric.attributes.CopyTo(dp.Attributes())
 		}
+		dp.Attributes().PutStr("event.module", "kubernetes")
 		dp.Attributes().PutStr("service.type", "kubernetes")
 		dp.Attributes().PutStr("data_stream.dataset", dataset)
 	}
