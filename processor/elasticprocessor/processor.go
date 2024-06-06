@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/elastic/opentelemetry-lib/remappers/hostmetrics"
+	"github.com/gizas/opentelemetry-lib/remappers/kubernetesmetrics"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -29,6 +30,11 @@ func newProcessor(set processor.CreateSettings, cfg *Config) *ElasticProcessor {
 	if cfg.AddSystemMetrics {
 		remappers = []remapper{
 			hostmetrics.NewRemapper(set.Logger, hostmetrics.WithSystemIntegrationDataset(true)),
+		}
+	}
+	if cfg.AddKubernetesMetrics {
+		remappers = []remapper{
+			kubernetesmetrics.NewRemapper(set.Logger, kubernetesmetrics.WithKubernetesIntegrationDataset(true)),
 		}
 	}
 	return &ElasticProcessor{

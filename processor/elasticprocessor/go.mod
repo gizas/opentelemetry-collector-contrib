@@ -3,7 +3,7 @@ module github.com/tommyers-elastic/opentelemetry-collector-contrib/processor/ela
 go 1.21.1
 
 require (
-	github.com/elastic/opentelemetry-lib v0.0.0-20240520143123-3234f90c8fca
+	github.com/gizas/opentelemetry-lib v0.0.0-20240606133431-e944e9e5111c
 	go.opentelemetry.io/collector/component v0.92.0
 	go.opentelemetry.io/collector/consumer v0.92.0
 	go.opentelemetry.io/collector/pdata v1.7.0
