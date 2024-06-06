@@ -7,7 +7,7 @@ import (
 
 func addClusterMetrics(metrics pmetric.MetricSlice, group string) error {
 	var timestamp pcommon.Timestamp
-	var node_allocatable_memory, node_allocatable_cpu float64
+	var node_allocatable_memory, node_allocatable_cpu int64
 
 	// iterate all metrics in the current scope and generate the additional Elastic kubernetes integration metrics
 	for i := 0; i < metrics.Len(); i++ {
@@ -17,28 +17,28 @@ func addClusterMetrics(metrics pmetric.MetricSlice, group string) error {
 			if timestamp == 0 {
 				timestamp = dp.Timestamp()
 			}
-			node_allocatable_cpu = dp.DoubleValue()
+			node_allocatable_cpu = dp.IntValue()
 		} else if metric.Name() == "k8s.node.allocatable_memory" {
 			dp := metric.Gauge().DataPoints().At(0)
 			if timestamp == 0 {
 				timestamp = dp.Timestamp()
 			}
-			node_allocatable_memory = dp.DoubleValue()
+			node_allocatable_memory = dp.IntValue()
 		}
 	}
 
 	addMetrics(metrics, group,
 		metric{
-			dataType:    Gauge,
-			name:        "kubernetes.node.cpu.allocatable.cores",
-			timestamp:   timestamp,
-			doubleValue: &node_allocatable_cpu,
+			dataType:  Gauge,
+			name:      "kubernetes.node.cpu.allocatable.cores",
+			timestamp: timestamp,
+			intValue:  &node_allocatable_cpu,
 		},
 		metric{
-			dataType:    Gauge,
-			name:        "kubernetes.node.memory.allocatable.bytes",
-			timestamp:   timestamp,
-			doubleValue: &node_allocatable_memory,
+			dataType:  Gauge,
+			name:      "kubernetes.node.memory.allocatable.bytes",
+			timestamp: timestamp,
+			intValue:  &node_allocatable_memory,
 		},
 	)
 
