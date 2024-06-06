@@ -3,11 +3,14 @@ package elasticprocessor
 import (
 	"context"
 
-	metadata "github.com/gizas/opentelemetry-collector-contrib/processor/elasticprocessor/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+)
+
+const (
+	typeStr = "elastic"
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
@@ -15,17 +18,17 @@ var processorCapabilities = consumer.Capabilities{MutatesData: true}
 // NewFactory returns a new factory for the Filter processor.
 func NewFactory() processor.Factory {
 	return processor.NewFactory(
-		metadata.Type,
+		typeStr,
 		createDefaultConfig,
-		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
-		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
-		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
+		processor.WithMetrics(createMetricsProcessor, component.StabilityLevelAlpha),
+		processor.WithLogs(createLogsProcessor, component.StabilityLevelAlpha),
+		processor.WithTraces(createTracesProcessor, component.StabilityLevelAlpha),
 	)
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		AddK8sMetrics: true,
+		AddSystemMetrics: true,
 	}
 }
 

@@ -1,7 +1,7 @@
 package elasticprocessor
 
 type Config struct {
-	AddK8sMetrics bool `mapstructure:"add_k8s_metrics"`
+	AddSystemMetrics bool `mapstructure:"add_system_metrics"`
 }
 
 func (c *Config) Validate() error {
